@@ -119,4 +119,3 @@ def run():
 if __name__ == '__main__':
  run()
 
-# http://crazyhorse.l2web.ca:7000/api/accounts?address=10432797017093773527L
