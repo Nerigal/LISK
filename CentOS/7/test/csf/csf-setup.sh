@@ -55,7 +55,7 @@ exists ${GLOBAL[setup_path]}
 
 
 echo -n 'Checking CSF installtion... '
-if [ -f '/etc/csf/csf.conf']; then
+if [ -f '/etc/csf/csf.conf' ]; then
 	echo -e $OK
 else
 	echo -e $WARNING 
@@ -141,12 +141,12 @@ if [ -f csf.tgz ]; then
 
 			function add_config()
 			{
-				if ! grep -q "${1}" $2; then
+				if ! grep -q "${1}" "${2}"; then
 					echo -e "Adding ${1} to ${2}"  $OK
 					if [ -n "$3" ]; then
-						echo "${1} # ${3}" >> $2
+						echo "${1} # ${3}" >> "${2}"
 					else
-						echo "${1}" >> $2
+						echo "${1}" >> "${2}"
 					fi
 				else
 					echo -e "${1} Already set" $WARNING
