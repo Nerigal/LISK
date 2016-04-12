@@ -1,12 +1,13 @@
 #!/bin/bash
-# csf-setup.sh
+# 
+#	Script name:    csf-setup.sh
+#	Created on:     11/04/2016
+#	Author:         Nerigal
+#	Version:        0.3
+#	Purpose:		Iptables manager 
+#  					more information at http://www.configserver.com/cp/csf.html
+#					http://download.configserver.com/csf/readme.txt
 
-
-#
-#
-# output information about the log file location
-#
-#
 
 red='\033[0;31m'
 green='\033[0;32m'
@@ -15,8 +16,13 @@ NC='\033[0m' # end of Color tag
 OK="[  ${green}OK${NC}  ]"
 ERROR="[  ${red}ERROR${NC}  ]"
 WARNING="[  ${yellow}WARNING${NC}  ]"
+
 CURRENTDATE=$(date +"%Y-%m-%d")
 
+#
+# output information about the log file location
+#
+#
 (
 
 if ! [ -f 'setup.conf']; then
@@ -46,6 +52,7 @@ exists ${CSF[alert_email]}
 exists ${CSF[ui_user]}
 exists ${CSF[ui_port]}
 exists ${GLOBAL[ipaddr]}
+exists ${GLOBAL[setup_path]}
 
 
 
@@ -55,10 +62,10 @@ if [ -f '/etc/csf/csf.conf']; then
 else
 	echo -e $WARNING 
 	echo 'Starting CSF Setup... '
-	cd /root/setup 
+	cd ${GLOBAL[setup_path]} 
 	if [ $? -eq 1 ]; then 		
 		echo -e 'Setup Folder Not Found' $WARNING
-		mkdir --parent --verbose /root/setup && cd /root/setup
+		mkdir --parent --verbose ${GLOBAL[setup_path]} && cd ${GLOBAL[setup_path]}
 		if [ $? -eq 0 ]; then
 			echo -e $OK
 		else
@@ -403,6 +410,8 @@ if [[ $RETVAL -eq 0 ]]; then
 	echo '# Quick restart csf'
 	echo '# csf -x && csf -e > /dev/null'
 	echo '# more then that RTFM!!!!1111one'
+	echo '# '
+	echo "# Thank you for your vote in advance!!! Nerigal "
 	echo '# '
 	echo '##################################################################'
 	echo -e $NC                                                                                      
