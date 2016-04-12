@@ -38,8 +38,9 @@ function exists()
 		echo -e "Please verify setup.conf" $ERROR
 		exit 1
 	fi
-}                                  
+}
 
+exists ${CSF[allow_ipaddr]}
 exists ${CSF[alert_email]}
 exists ${CSF[LF_ALERT_FROM]}
 exists ${CSF[ssl_nat_port]}
@@ -157,7 +158,7 @@ if [ -f csf.tgz ]; then
 			
 			echo 'Editing csf.ignore'
 			add_config '127.0.0.1' $csfignore 'loopback ip'
-			add_config ${GLOBAL[ipaddr]} $csfignore 'External ip'
+			add_config ${CSF[allow_ipaddr]} $csfignore 'External ip'
 
 			#-------------------------------------------------------------------------------------------------------------------------------------
 
@@ -176,12 +177,12 @@ if [ -f csf.tgz ]; then
 			add_config '127.0.0.1' $csfallow 'loopback ip'
 			
 			# Adding External ip to csf.allow 
-			add_config ${GLOBAL[ipaddr]} $csfallow 'External ip'
+			add_config ${CSF[allow_ipaddr]} $csfallow 'External ip'
 
 			############################################################ END OF csf.allow ######################################################
 
 			# Adding External ip to /etc/csf/ui/ui.allow 
-			add_config ${GLOBAL[ipaddr]} $csfuiallow 'External ip'
+			add_config ${CSF[allow_ipaddr]} $csfuiallow 'External ip'
 
 			########################################################## csf.blocklists ########################################################## 
 			sleep 1
