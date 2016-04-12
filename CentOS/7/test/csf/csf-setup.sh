@@ -46,6 +46,7 @@ exists ${CSF[LF_ALERT_FROM]}
 exists ${CSF[ssl_nat_port]}
 exists ${CSF[lisk_port]}
 exists ${CSF[alert_email]}
+exists ${GLOBAL[liskuser]}
 exists ${CSF[ui_user]}
 exists ${CSF[ui_port]}
 exists ${GLOBAL[ipaddr]}
@@ -165,10 +166,10 @@ if [ -f /etc/csf/csf.conf ]; then
 
 	############################################################ csf.pignore #############################################################
 
-	add_config 'user:' $csfpignore ''
-	add_config 'exe:/usr/local/bin/lisk' $csfpignore ''
-	
-	
+	add_config 'user:'${GLOBAL[liskuser]}'' $csfpignore
+	add_config 'exe:/usr/libexec/postfix/smtp' $csfpignore
+	add_config 'exe:/usr/libexec/postfix/local' $csfpignore
+	add_config 'exe:/usr/libexec/postfix/qmgr' $csfpignore
 	
 	##################################################### END OF csf.pignore #############################################################
 
