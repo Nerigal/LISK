@@ -27,13 +27,9 @@ CURRENTDATE=$(date +"%Y-%m-%d")
 #
 (
 
-if ! [ -f 'setup.conf']; then
-	echo -e 'Could not find setup.config file...' $WARNING
-	echo 'Trying to find stand alone config file... '
-	wget 
-	if [ $? -eq 1 ]; then 
-		exit 1
-	fi
+if ! [ -f 'setup.conf' ]; then
+	echo -e 'could not find setup.conf file...' $WARNING
+	exit 1
 fi
 
 . 'setup.conf'
