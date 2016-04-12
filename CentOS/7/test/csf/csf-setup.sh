@@ -400,6 +400,10 @@ if [[ $RETVAL -eq 0 ]]; then
 	echo '#	ISTRONGLY RECOMMAND YOU REVIEW ALL SETTINGS'
 	echo '#	https://'${GLOBAL[ipaddr]}':'${CSF[ui_port]}' '
 	echo '#'
+	echo '# Quick restart csf'
+	echo '# csf -x && csf -e > /dev/null'
+	echo '# more then that RTFM!!!!1111one'
+	echo '# '
 	echo '##################################################################'
 	echo -e $NC                                                                                      
 fi
