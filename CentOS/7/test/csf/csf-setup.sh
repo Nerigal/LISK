@@ -5,11 +5,11 @@
 #	Author:			Nerigal
 #	Version:		0.3
 #	Purpose:		Iptables manager 
-#					more information at http://www.configserver.com/cp/csf.html
-#					http://download.configserver.com/csf/readme.txt
+#                   more information at http://www.configserver.com/cp/csf.html
+#                   http://download.configserver.com/csf/readme.txt
 #	
 #	Hope This script will help you !!
-#	 
+#
 
 red='\033[0;31m'
 green='\033[0;32m'
