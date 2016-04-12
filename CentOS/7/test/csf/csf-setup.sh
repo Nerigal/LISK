@@ -25,8 +25,6 @@ CURRENTDATE=$(date +"%Y-%m-%d")
 # output information about the log file location
 #
 #
-(
-
 if ! [ -f 'setup.conf' ]; then
 	echo -e 'could not find setup.conf file...' $WARNING
 	exit 1
@@ -53,7 +51,7 @@ exists ${GLOBAL[ipaddr]}
 exists ${GLOBAL[setup_path]}
 
 
-
+(
 echo -n 'Checking CSF installtion... '
 if [ -f '/etc/csf/csf.conf' ]; then
 	echo -e $OK
@@ -159,8 +157,7 @@ if [ -f csf.tgz ]; then
 			
 			echo 'Editing csf.ignore'
 			add_config '127.0.0.1' $csfignore 'loopback ip'
-			add_config $ipaddr $csfignore 'External ip'
-			add_config $mon_ipaddr $csfignore 'External ip'
+			add_config ${GLOBAL[ipaddr]} $csfignore 'External ip'
 
 			#-------------------------------------------------------------------------------------------------------------------------------------
 
@@ -179,12 +176,12 @@ if [ -f csf.tgz ]; then
 			add_config '127.0.0.1' $csfallow 'loopback ip'
 			
 			# Adding External ip to csf.allow 
-			add_config $ipaddr $csfallow 'External ip'
+			add_config ${GLOBAL[ipaddr]} $csfallow 'External ip'
 
 			############################################################ END OF csf.allow ######################################################
 
 			# Adding External ip to /etc/csf/ui/ui.allow 
-			add_config $ipaddr $csfuiallow 'External ip'
+			add_config ${GLOBAL[ipaddr]} $csfuiallow 'External ip'
 
 			########################################################## csf.blocklists ########################################################## 
 			sleep 1
@@ -375,7 +372,9 @@ if [ -f csf.tgz ]; then
 
 			if grep -Pq 'UI_PASS = \"password\"' $csfconfig ;then
 				pass=`tr -cd \!A-Za-z0-9 < /dev/urandom | fold -w16 | head -n1`
+				echo -e $yellow
 				echo 'CSF UI password is... ' $pass
+				echo -e $NC 
 				sed -r -i 's/^#?UI_PASS =.*/UI_PASS = "'$pass'"/g' $csfconfig
 			else
 				echo 'Password already set'
@@ -384,11 +383,11 @@ if [ -f csf.tgz ]; then
 	fi # if csf folder exist
 fi # if csf.tgz
 
-csf -x && csf -e
+csf -x > /dev/null && csf -e > /dev/null
 RETVAL=$?
 echo 
 
-) 2>&1 | /usr/bin/tee /root/setup/csf-setup.log --append
+) 2>&1 | /usr/bin/tee "${GLOBAL[setup_path]}/csf-setup.log" --append
 
 
 if [[ $RETVAL -eq 0 ]]; then
@@ -402,13 +401,14 @@ if [[ $RETVAL -eq 0 ]]; then
 	echo '# You can find more information at http://configserver.com/cp/csf.html'
 	echo '#'
 	echo '#	>>> THIS IS A MINIMAL CONFIG <<<'
-	echo '#	ISTRONGLY RECOMMAND YOU REVIEW ALL SETTINGS'
+	echo '#	I STRONGLY RECOMMAND YOU REVIEW ALL SETTINGS'
 	echo '#	https://'${GLOBAL[ipaddr]}':'${CSF[ui_port]}' '
 	echo '#'
 	echo '# Quick restart csf'
 	echo '# csf -x && csf -e > /dev/null'
 	echo '# more then that RTFM!!!!1111one'
-	echo '# '
+	echo '# man csf '
+	echo '#'
 	echo "# Thank you for your vote in advance!!! Nerigal "
 	echo '# '
 	echo '##################################################################'
