@@ -165,8 +165,10 @@ if [ -f /etc/csf/csf.conf ]; then
 
 	############################################################ csf.pignore #############################################################
 
-	add_config 'user:lskmark' $csfpignore ''
+	add_config 'user:' $csfpignore ''
 	add_config 'exe:/usr/local/bin/lisk' $csfpignore ''
+	
+	
 	
 	##################################################### END OF csf.pignore #############################################################
 
