@@ -1,13 +1,15 @@
 #!/bin/bash
-# 
-#	Script name:    csf-setup.sh
-#	Created on:     11/04/2016
-#	Author:         Nerigal
-#	Version:        0.3
+#
+#	Script name:	csf-setup.sh
+#	Created on:		11/04/2016
+#	Author:			Nerigal
+#	Version:		0.3
 #	Purpose:		Iptables manager 
-#  					more information at http://www.configserver.com/cp/csf.html
+#					more information at http://www.configserver.com/cp/csf.html
 #					http://download.configserver.com/csf/readme.txt
-
+#	
+#	Hope This script will help you !!
+#	 
 
 red='\033[0;31m'
 green='\033[0;32m'
