@@ -46,7 +46,6 @@ exists ${POSTFIX[config_file]}
 function setconfig()
 {
 	echo -n "Checking configration ${1}... "
-	echo "${3}"
 	if grep -q "${1}" "${3}"; then
 		echo -e $OK
 		sed -r -i 's/^'"${1}"'.*/'"${1}"' = '"${2}"'/g' "${3}"
@@ -56,19 +55,21 @@ function setconfig()
 	fi
 }
 
-echo  'Checking Postfix config... '
+echo 'Creating backup of the config file ...  '
 if ! [ -f "${POSTFIX[config_file]}-$CURRENTDATE" ]; then
-	echo 'Creating backup of the config file ...  '
 	cp ${POSTFIX[config_file]} "${POSTFIX[config_file]}-$CURRENTDATE"
-	if [ $? -eq 0 ]; then
-		setconfig 'inet_interfaces' 'localhost' ${POSTFIX[config_file]}
-		setconfig 'inet_protocols' 'ipv4'${POSTFIX[config_file]}
-		setconfig 'smtpd_timeout' '3600s' ${POSTFIX[config_file]}
-		setconfig 'smtpd_proxy_timeout' '3600s' ${POSTFIX[config_file]}
-		setconfig 'disable_vrfy_command' 'yes' ${POSTFIX[config_file]}
-		setconfig 'message_size_limit' '26214400' ${POSTFIX[config_file]}
-		setconfig 'smtp_bind_address' ${GLOBAL[hostname]} ${POSTFIX[config_file]}	
-		setconfig 'myorigin' '$myhostname' ${POSTFIX[config_file]}
-		systemctl restart postfix.service
-	fi
+fi 
+
+echo  'Checking Postfix config... '
+if [ $? -eq 0 ]; then
+	setconfig 'inet_interfaces' 'localhost' ${POSTFIX[config_file]}
+	setconfig 'inet_protocols' 'ipv4' ${POSTFIX[config_file]}
+	setconfig 'smtpd_timeout' '3600s' ${POSTFIX[config_file]}
+	setconfig 'smtpd_proxy_timeout' '3600s' ${POSTFIX[config_file]}
+	setconfig 'disable_vrfy_command' 'yes' ${POSTFIX[config_file]}
+	setconfig 'message_size_limit' '26214400' ${POSTFIX[config_file]}
+	setconfig 'smtp_bind_address' ${GLOBAL[hostname]} ${POSTFIX[config_file]}	
+	setconfig 'myorigin' '$myhostname' ${POSTFIX[config_file]}
+	systemctl restart postfix.service
 fi
+
