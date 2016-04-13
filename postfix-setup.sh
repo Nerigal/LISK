@@ -19,6 +19,9 @@ WARNING="[  ${yellow}WARNING${NC}  ]"
 
 CURRENTDATE=$(date +"%Y-%m-%d")
 
+mkdir --parent --verbose /opt/setup 
+cd /opt/setup
+
 if ! [ -f '/opt/setup/setup.conf' ]; then
 	echo -e 'could not find setup.conf file...' $WARNING
 	wget https://raw.githubusercontent.com/Nerigal/LISK/master/setup.conf '/opt/setup/setup.conf'	
