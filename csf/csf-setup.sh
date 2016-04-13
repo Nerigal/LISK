@@ -318,10 +318,10 @@ if [ -f /etc/csf/csf.conf ]; then
 	sed -r -i 's/^#?LF_SPI =.*/LF_SPI = "1"/g' $csfconfig
 
 	# Allow incoming TCP ports
-	sed -r -i 's/^#?TCP_IN =.*/TCP_IN = "53,443,'${CSF[ssl_nat_port]}','${CSF[lisk_port]}'"/g' $csfconfig
+	sed -r -i 's/^#?TCP_IN =.*/TCP_IN = ""/g' $csfconfig
 
 	# Allow outgoing TCP ports
-	sed -r -i 's/^#?TCP_OUT =.*/TCP_OUT = "53,80,443,'${CSF[ssl_nat_port]}','${CSF[lisk_port]}'"/g' $csfconfig
+	sed -r -i 's/^#?TCP_OUT =.*/TCP_OUT = "80,443,'${CSF[ssl_nat_port]}','${CSF[lisk_port]}'"/g' $csfconfig
 
 	# Allow incoming UDP ports
 	sed -r -i 's/^#?UDP_IN =.*/UDP_IN = "53"/g' $csfconfig
@@ -333,10 +333,10 @@ if [ -f /etc/csf/csf.conf ]; then
 	sed -r -i 's/^#?IPV6_SPI =.*/IPV6_SPI = ""/g' $csfconfig
 
 	# Allow incoming IPv6 TCP ports
-	sed -r -i 's/^#?TCP6_IN =.*/TCP6_IN = "53,443,'${CSF[ssl_nat_port]}','${CSF[lisk_port]}'"/g' $csfconfig
+	sed -r -i 's/^#?TCP6_IN =.*/TCP6_IN = ""/g' $csfconfig
 
 	# Allow outgoing TCP ports
-	sed -r -i 's/^#?TCP6_OUT =.*/TCP6_OUT = "53,80,443,'${CSF[ssl_nat_port]}','${CSF[lisk_port]}'"/g' $csfconfig
+	sed -r -i 's/^#?TCP6_OUT =.*/TCP6_OUT = "80,443,'${CSF[ssl_nat_port]}','${CSF[lisk_port]}'"/g' $csfconfig
 
 	# Allow incoming UDP ports
 	sed -r -i 's/^#?UDP6_IN =.*/UDP6_IN = "53"/g' $csfconfig
