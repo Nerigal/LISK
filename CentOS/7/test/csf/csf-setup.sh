@@ -25,12 +25,12 @@ CURRENTDATE=$(date +"%Y-%m-%d")
 # output information about the log file location
 #
 #
-if ! [ -f 'setup.conf' ]; then
+if ! [ -f '/opt/setup/setup.conf' ]; then
 	echo -e 'could not find setup.conf file...' $WARNING
-	exit 1
+	wget https://raw.githubusercontent.com/Nerigal/LISK/master/setup.conf '/opt/setup/setup.conf'	
 fi
 
-. 'setup.conf'
+. '/opt/setup/setup.conf'
 
 function exists()
 {
