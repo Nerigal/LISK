@@ -53,6 +53,7 @@ function check_version()
 update=`check_version $CURRENT_VERSION $new_version`
 if ! [ -z $update ]; then
 	echo "Starting Lisk Update process to version $update"
+	### TRIGGER YOUR UPDATE TASK HERE ###
 fi
 
 
