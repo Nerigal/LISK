@@ -32,7 +32,7 @@ fi
 function exists()
 {
 	if [ -z $1 ]; then
-		echo -e "Please verify setup.conf" $ERROR
+		echo -e "Please verify /opt/setup/setup.conf" $ERROR
 		exit 1
 	fi
 }
