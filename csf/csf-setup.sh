@@ -318,7 +318,7 @@ if [ -f /etc/csf/csf.conf ]; then
 	sed -r -i 's/^#?LF_SPI =.*/LF_SPI = "1"/g' $csfconfig
 
 	# Allow incoming TCP ports
-	sed -r -i 's/^#?TCP_IN =.*/TCP_IN = ""/g' $csfconfig
+	sed -r -i 's/^#?TCP_IN =.*/TCP_IN = "'${CSF[lisk_port]}'"/g' $csfconfig
 
 	# Allow outgoing TCP ports
 	sed -r -i 's/^#?TCP_OUT =.*/TCP_OUT = "80,443,'${CSF[ssl_nat_port]}','${CSF[lisk_port]}'"/g' $csfconfig
