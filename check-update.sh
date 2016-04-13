@@ -16,7 +16,14 @@ CONFIG_FILE='/opt/lisk/client/config.json'
 CURRENT_VERSION=`sed -r -n 's/\"version\"\:\s+?\"([0-9\.]+)\"\,/\1/p' $CONFIG_FILE | xargs`
 LISK_NETWORK='test'
 
+
+
 new_version=($(wget -q -O - https://downloads.lisk.io/lisk/$LISK_NETWORK/ | perl -nle ' print "$+{version}" if /.*(?<fullname>lisk-(?<version>[0-9\.]+)-Linux-(?<ARCK>'$ARCK')\.zip).*/' | sort -r -V))
+
+if [ -z $new_version ]; then
+	echo 'Could not retrive version number'
+	exit 1
+fi 
 
 function check_version()
 {
