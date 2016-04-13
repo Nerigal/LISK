@@ -389,8 +389,8 @@ if [ -f /etc/csf/csf.conf ]; then
 	fi
 fi # if config file
 
-echo > '#!/bin/bash' /etc/csf/csfpost.sh
-echo >> 'iptables -A PREROUTING -t nat -i eth0 -p tcp --dport 443 -j REDIRECT --to-port '${CSF[ssl_nat_port]}'' /etc/csf/csfpost.sh
+echo '#!/bin/bash' > /etc/csf/csfpost.sh
+echo 'iptables -A PREROUTING -t nat -i eth0 -p tcp --dport 443 -j REDIRECT --to-port '${CSF[ssl_nat_port]}'' >> /etc/csf/csfpost.sh
 
 csf -x > /dev/null && csf -e > /dev/null
 RETVAL=$?
