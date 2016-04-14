@@ -18,7 +18,7 @@ LISK_NETWORK='test'
 
 
 
-new_version=($(wget -q -O - https://downloads.lisk.io/lisk/$LISK_NETWORK/ | perl -nle ' print "$+{version}" if /.*(?<fullname>lisk-(?<version>[0-9\.]+)-Linux-(?<ARCK>'$ARCK')\.zip).*/' | sort -r -V))
+new_version=($(wget -q -O - https://downloads.lisk.io/lisk/$LISK_NETWORK/ | perl -nle ' print "$+{version}" if /.*(?<fullname>lisk-(?<version>(?:[0-9\.]+|latest))-Linux-(?<ARCK>'$ARCK')\.zip).*/' | sort -r -V))
 
 if [ -z $new_version ]; then
 	echo 'Could not retrive version number'
