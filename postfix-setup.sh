@@ -68,7 +68,7 @@ if [ $? -eq 0 ]; then
 	setconfig 'smtpd_proxy_timeout' '3600s' ${POSTFIX[config_file]}
 	setconfig 'disable_vrfy_command' 'yes' ${POSTFIX[config_file]}
 	setconfig 'message_size_limit' '26214400' ${POSTFIX[config_file]}
-	setconfig 'smtp_bind_address' ${GLOBAL[hostname]} ${POSTFIX[config_file]}	
+	setconfig 'smtp_bind_address' ${GLOBAL[ipaddr]} ${POSTFIX[config_file]}	
 	setconfig 'myorigin' '$myhostname' ${POSTFIX[config_file]}
 	systemctl restart postfix.service
 fi
