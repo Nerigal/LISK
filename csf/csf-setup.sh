@@ -321,7 +321,7 @@ if [ -f /etc/csf/csf.conf ]; then
 	sed -r -i 's/^#?TCP_IN =.*/TCP_IN = "'${CSF[lisk_port]}'"/g' $csfconfig
 
 	# Allow outgoing TCP ports
-	sed -r -i 's/^#?TCP_OUT =.*/TCP_OUT = "80,443,'${CSF[ssl_nat_port]}','${CSF[lisk_port]}'"/g' $csfconfig
+	sed -r -i 's/^#?TCP_OUT =.*/TCP_OUT = "25,80,443,'${CSF[ssl_nat_port]}','${CSF[lisk_port]}'"/g' $csfconfig
 
 	# Allow incoming UDP ports
 	sed -r -i 's/^#?UDP_IN =.*/UDP_IN = "53"/g' $csfconfig
