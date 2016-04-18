@@ -70,6 +70,7 @@ if [ $? -eq 0 ]; then
 	setconfig 'message_size_limit' '26214400' ${POSTFIX[config_file]}
 	setconfig 'smtp_bind_address' ${GLOBAL[ipaddr]} ${POSTFIX[config_file]}	
 	setconfig 'myorigin' '$myhostname' ${POSTFIX[config_file]}
+	setconfig 'myhostname' ${GLOBAL[hostname]}
 	systemctl restart postfix.service
 fi
 
