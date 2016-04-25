@@ -190,7 +190,7 @@ if [ -f /etc/csf/csf.conf ]; then
 			fi		
 			
 		else
-			echo "${Param} Already set in ${ConfigFile}" $WARNING
+			echo -e "${Param} Already set in ${ConfigFile}" $WARNING
 		fi
 	}
 	#-------------------------------------------------------------------------------------------------------------------------------------
