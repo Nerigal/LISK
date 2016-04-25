@@ -35,26 +35,49 @@ fi
 
 . '/opt/setup/setup.conf'
 
-function exists()
+function mandatory()
 {
 	if [ -z $1 ]; then
-		echo -e "Please verify setup.conf" $ERROR
+		echo -e "Please verify setup.conf ${2}" $ERROR
 		exit 1
 	fi
 }
 
-exists ${CSF[allow_ipaddr]}
-exists ${CSF[alert_email]}
-exists ${CSF[LF_ALERT_FROM]}
-exists ${CSF[ssl_nat_port]}
-exists ${CSF[lisk_port]}
-exists ${CSF[alert_email]}
-exists ${GLOBAL[liskuser]}
-exists ${CSF[ui_user]}
-exists ${CSF[ui_port]}
-exists ${GLOBAL[ipaddr]}
-exists ${GLOBAL[setup_path]}
+function exists()
+{
+	if [ -z $1 ]; then
+		echo -e "You should consider configuring ${2} in Setup.conf"  $WARNING
+	fi
+}
 
+mandatory ${CSF[allow_ipaddr]} 'CSF[allow_ipaddr]'
+mandatory ${CSF[ui_user]}  'CSF[ui_user]'
+mandatory ${GLOBAL[ipaddr]} 'GLOBAL[ipaddr]'
+mandatory ${GLOBAL[setup_path]} 'GLOBAL[setup_path]'
+
+exists ${CSF[alert_email]}  'CSF[alert_email]'
+exists ${CSF[LF_ALERT_FROM]} 'CSF[LF_ALERT_FROM]'
+exists ${CSF[ui_port]} 'CSF[ui_port]'
+
+
+if [ -n ${CSF[LF_ALERT_FROM]} ]; then 
+
+CSF[LF_ALERT_FROM]=`hostname -s`'CSF'@`hostname`
+fi 
+
+# validation prerequisite
+if ! [ -f /usr/sbin/ipset ]; then
+	echo -n 'could not find ipset, please install ipset... '
+	echo -e $ERRORE
+	exit 1
+fi
+
+if ! [ -f /usr/bin/wget ]; then
+	echo -n 'could not find ipset, please install wget... '
+	echo -e $ERRORE
+	exit 1
+fi
+	
 
 (
 echo -n 'Checking CSF installtion... '
@@ -90,11 +113,6 @@ else
 		echo -e $OK		
 	fi
 
-	# validation prerequisite
-	if ! [ -f /usr/sbin/ipset ]; then
-		echo 'Installing ipset'
-		yum install ipset -y
-	fi	
 	# install csf 
 	wget https://download.configserver.com/csf.tgz csf.tgz
 
@@ -142,37 +160,72 @@ if [ -f /etc/csf/csf.conf ]; then
 
 	sleep 1
 	#####################################################################################################################################
-
+	
+	
 	function add_config()
 	{
-		if ! grep -q "${1}" "${2}"; then
-			echo -e "Adding ${1} to ${2}"  $OK
-			if [ -n "$3" ]; then
-				echo "${1} # ${3}" >> "${2}"
+		Param=$1
+		ConfigFile=$2
+		Msg=$3
+		File=$4
+		
+		if ! grep -q "${Param}" "${ConfigFile}"; then
+			echo -e "Checking param ${Param} to ${ConfigFile}"  $OK			
+			
+			if [ ${File} == 'N/A' ]; then
+				if ! [ ${Msg} == 'N/A' ]; then
+					echo "${Param} # ${Msg}" >> "${ConfigFile}"
+				else
+					echo "${Param}" >> "${ConfigFile}"
+				fi
 			else
-				echo "${1}" >> "${2}"
-			fi
+				if [ -f ${File} ];then 
+					if ! [ ${Msg} == 'N/A' ]; then
+						echo "${Param} # ${Msg}" >> "${ConfigFile}"
+					else
+						echo "${Param}" >> "${ConfigFile}"
+					fi
+				else
+					echo "File ${File} No found on your system... "
+				fi
+			fi		
+			
 		else
-			echo -e "${1} Already set in ${2}" $WARNING
+			echo "${Param} Already set in ${ConfigFile}" $WARNING
 		fi
 	}
+	#-------------------------------------------------------------------------------------------------------------------------------------
 	
+	if ! [[ -z ${CSFPOSTRULES[@]} ]] ; then
+		echo '#!/bin/bash' > /etc/csf/csfpost.sh
+		for rule in "${CSFPOSTRULES[@]}"
+		do
+		 echo "$rule" >> /etc/csf/csfpost.sh
+		done
+	fi
+
 	
 	#-------------------------------------------------------------------------------------------------------------------------------------
 	# csf.ignore
 	
 	echo 'Editing csf.ignore'
-	add_config '127.0.0.1' $csfignore 'loopback ip'
-	add_config ${CSF[allow_ipaddr]} $csfignore 'External ip'
+	add_config '127.0.0.1'			$csfignore 'loopback ip' 'N/A'
+	add_config ${CSF[allow_ipaddr]}	$csfignore 'External ip' 'N/A'
 
 	#-------------------------------------------------------------------------------------------------------------------------------------
 
 	############################################################ csf.pignore #############################################################
 
-	add_config 'user:'${GLOBAL[liskuser]}'' $csfpignore
-	add_config 'exe:/usr/libexec/postfix/smtp' $csfpignore
-	add_config 'exe:/usr/libexec/postfix/local' $csfpignore
-	add_config 'exe:/usr/libexec/postfix/qmgr' $csfpignore
+	add_config 'user:'${GLOBAL[liskuser]}'' 		$csfpignore 'N/A' 'N/A' 
+	
+	add_config 'exe:/usr/libexec/postfix/smtp'		$csfpignore 'N/A' '/usr/libexec/postfix/smtp'
+	add_config 'exe:/usr/libexec/postfix/local' 	$csfpignore 'N/A' '/usr/libexec/postfix/local'
+	add_config 'exe:/usr/libexec/postfix/qmgr'		$csfpignore 'N/A' '/usr/libexec/postfix/qmgr'
+	
+	add_config 'exe:/usr/lib/postfix/sbin/smtp'		$csfpignore 'N/A' '/usr/lib/postfix/sbin/smtp'
+	add_config 'exe:/usr/lib/postfix/sbin/local'	$csfpignore 'N/A' '/usr/lib/postfix/sbin/local'
+	add_config 'exe:/usr/lib/postfix/sbin/qmgr' 	$csfpignore 'N/A' '/usr/lib/postfix/sbin/qmgr'
+	add_config 'exe:/usr/sbin/snmpd' 				$csfpignore 'N/A' '/usr/sbin/snmpd'
 	
 	##################################################### END OF csf.pignore #############################################################
 
@@ -181,15 +234,15 @@ if [ -f /etc/csf/csf.conf ]; then
 	sleep 1
 
 	# Adding localhost to csf.allow
-	add_config '127.0.0.1' $csfallow 'loopback ip'
+	add_config '127.0.0.1' $csfallow 'loopback ip' 'N/A'
 	
 	# Adding External ip to csf.allow 
-	add_config ${CSF[allow_ipaddr]} $csfallow 'External ip'
+	add_config ${CSF[allow_ipaddr]} $csfallow 'External ip' 'N/A'
 
 	############################################################ END OF csf.allow ######################################################
 
 	# Adding External ip to /etc/csf/ui/ui.allow 
-	add_config ${CSF[allow_ipaddr]} $csfuiallow 'External ip'
+	add_config ${CSF[allow_ipaddr]} $csfuiallow 'External ip' 'N/A'
 
 	########################################################## csf.blocklists ########################################################## 
 	sleep 1
@@ -311,39 +364,41 @@ if [ -f /etc/csf/csf.conf ]; then
 	########################################################## END OF csf.blocklists ##################################################
 
 	########################################################## CSF Config ##############################################################
-	sleep 1
+sleep 1
 	echo 'Changing config in CSF config file ... '
 	sed -r -i 's/^#?TESTING =.*/TESTING = "0"/g' $csfconfig
 	sed -r -i 's/^#?AUTO_UPDATES =.*/AUTO_UPDATES = "1"/g' $csfconfig
 	sed -r -i 's/^#?LF_SPI =.*/LF_SPI = "1"/g' $csfconfig
-
+	
 	# Allow incoming TCP ports
-	sed -r -i 's/^#?TCP_IN =.*/TCP_IN = "'${CSF[lisk_port]}'"/g' $csfconfig
+	sed -r -i 's/^#?TCP_IN =.*/TCP_IN = "'${CSF[TCP_IN]}'"/g' $csfconfig
 
 	# Allow outgoing TCP ports
-	sed -r -i 's/^#?TCP_OUT =.*/TCP_OUT = "25,80,443,'${CSF[ssl_nat_port]}','${CSF[lisk_port]}'"/g' $csfconfig
+	sed -r -i 's/^#?TCP_OUT =.*/TCP_OUT = "'${CSF[TCP_OUT]}'"/g' $csfconfig
 
 	# Allow incoming UDP ports
-	sed -r -i 's/^#?UDP_IN =.*/UDP_IN = "53"/g' $csfconfig
+	sed -r -i 's/^#?UDP_IN =.*/UDP_IN = "'${CSF[UDP_IN]}'"/g' $csfconfig
 
 	# Allow outgoing UDP ports
 	# To allow outgoing traceroute add 33434:33523 to this list 
-	sed -r -i 's/^#?UDP_OUT =.*/UDP_OUT = "53,123"/g' $csfconfig
+	sed -r -i 's/^#?UDP_OUT =.*/UDP_OUT = "'${CSF[UDP_OUT]}'"/g' $csfconfig
+	
 	sed -r -i 's/^#?IPV6_ICMP_STRICT =.*/IPV6_ICMP_STRICT = "1"/g' $csfconfig
-	sed -r -i 's/^#?IPV6_SPI =.*/IPV6_SPI = ""/g' $csfconfig
+	sed -r -i 's/^#?IPV6_SPI =.*/IPV6_SPI = "0"/g' $csfconfig
 
 	# Allow incoming IPv6 TCP ports
-	sed -r -i 's/^#?TCP6_IN =.*/TCP6_IN = ""/g' $csfconfig
+	sed -r -i 's/^#?TCP6_IN =.*/TCP6_IN = "'${CSF[TCP_IN]}'"/g' $csfconfig
 
 	# Allow outgoing TCP ports
-	sed -r -i 's/^#?TCP6_OUT =.*/TCP6_OUT = "80,443,'${CSF[ssl_nat_port]}','${CSF[lisk_port]}'"/g' $csfconfig
+	sed -r -i 's/^#?TCP6_OUT =.*/TCP6_OUT = "'${CSF[TCP_OUT]}'"/g' $csfconfig
 
 	# Allow incoming UDP ports
-	sed -r -i 's/^#?UDP6_IN =.*/UDP6_IN = "53"/g' $csfconfig
+	sed -r -i 's/^#?UDP6_IN =.*/UDP6_IN = ""/g' $csfconfig
 	sed -r -i 's/^#?UDP6_OUT =.*/UDP6_OUT = "53,123"/g' $csfconfig
 	sed -r -i 's/^#?USE_CONNTRACK =.*/USE_CONNTRACK = "1"/g' $csfconfig
-	sed -r -i 's/^#?SYSLOG_CHECK =.*/SYSLOG_CHECK = "0"/g' $csfconfig
+	sed -r -i 's/^#?SYSLOG_CHECK =.*/SYSLOG_CHECK = "300"/g' $csfconfig
 	sed -r -i 's/^#?DENY_IP_LIMIT =.*/DENY_IP_LIMIT = "5000"/g' $csfconfig
+	sed -r -i 's/^#?DENY_TEMP_IP_LIMIT =.*/DENY_TEMP_IP_LIMIT = "1000"/g' $csfconfig	
 	sed -r -i 's/^#?LF_IPSET =.*/LF_IPSET = "1"/g' $csfconfig
 	sed -r -i 's/^#?LFDSTART =.*/LFDSTART = "1"/g' $csfconfig
 	sed -r -i 's/^#?SMTP_ALLOWUSER =.*/SMTP_ALLOWUSER = ""/g' $csfconfig
@@ -352,7 +407,7 @@ if [ -f /etc/csf/csf.conf ]; then
 	sed -r -i 's/^#?DROP_IP_LOGGING =.*/DROP_IP_LOGGING = "1"/g' $csfconfig
 	sed -r -i 's/^#?DROP_PF_LOGGING =.*/DROP_PF_LOGGING = "1"/g' $csfconfig
 	sed -r -i 's/^#?LOGFLOOD_ALERT =.*/LOGFLOOD_ALERT = "1"/g' $csfconfig
-	sed -r -i 's/^#?LF_ALERT_TO =.*/LF_ALERT_TO = "'${CSF[alert_email]}'"/g' $csfconfig			
+	sed -r -i 's/^#?LF_ALERT_TO =.*/LF_ALERT_TO = "'${CSF[alert_email]}'"/g' $csfconfig	
 	sed -r -i 's/^#?LF_ALERT_FROM =.*/LF_ALERT_FROM = "'${CSF[LF_ALERT_FROM]}'"/g' $csfconfig			
 	sed -r -n 's/^#?BLOCK_REPORT.*/BLOCK_REPORT = "1"/p' /etc/csf/csf.conf 
 	sed -r -i 's/^#?BLOCK_REPORT =.*/BLOCK_REPORT = "1"/g' $csfconfig
@@ -389,12 +444,13 @@ if [ -f /etc/csf/csf.conf ]; then
 	fi
 fi # if config file
 
-echo '#!/bin/bash' > /etc/csf/csfpost.sh
-echo 'iptables -A PREROUTING -t nat -i eth0 -p tcp --dport 443 -j REDIRECT --to-port '${CSF[ssl_nat_port]}'' >> /etc/csf/csfpost.sh
+if [ -f /etc/csf/csf.error ]; then 
+	echo 'Removeing /etc/csf/csf.error'
+	rm -f /etc/csf/csf.error
+fi
 
 csf -x > /dev/null && csf -e > /dev/null
-RETVAL=$?
-echo 
+rm -f --verbose /etc/csf/csf.error
 
 ) 2>&1 | /usr/bin/tee "${GLOBAL[setup_path]}/csf-setup.log" --append
 
@@ -423,6 +479,7 @@ if [[ $RETVAL -eq 0 ]]; then
 	echo '##################################################################'
 	echo -e $NC                                                                                      
 fi
+
 
 
 ########################################################## END OF CSF CONFIG #######################################################
