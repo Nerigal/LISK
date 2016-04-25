@@ -66,18 +66,17 @@ CSF[LF_ALERT_FROM]=`hostname -s`'CSF'@`hostname`
 fi 
 
 # validation prerequisite
-if ! [ -f /usr/sbin/ipset ]; then
+if  [ ! -f /usr/sbin/ipset ] && [ ! -f /sbin/ipset ]; then
 	echo -n 'could not find ipset, please install ipset... '
 	echo -e $ERRORE
 	exit 1
 fi
 
-if ! [ -f /usr/bin/wget ]; then
+if [ ! -f /usr/bin/wget ] && [ ! -f /usr/local/bin/wget ] ; then
 	echo -n 'could not find ipset, please install wget... '
 	echo -e $ERRORE
 	exit 1
-fi
-	
+fi	
 
 (
 echo -n 'Checking CSF installtion... '
