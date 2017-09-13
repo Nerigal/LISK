@@ -1,9 +1,12 @@
 #!/bin/bash
+##############################################
+# CSF Firewall - START
+##############################################
 #
 #	Script name:	csf-setup.sh
 #	Created on:		11/04/2016
-#	Author:			Nerigal
-#	Version:		0.3
+#	Author:			Nerigal Awatt
+#	Version:		2.0
 #	Purpose:		Iptables manager 
 #				more information at http://www.configserver.com/cp/csf.html
 #				http://download.configserver.com/csf/readme.txt
@@ -11,44 +14,32 @@
 #	Hope This script will help you !!
 #
 
-red='\033[0;31m'
-green='\033[0;32m'
-yellow='\033[1;33m'
-NC='\033[0m' # end of Color tag
-OK="[  ${green}OK${NC}  ]"
-ERROR="[  ${red}ERROR${NC}  ]"
-WARNING="[  ${yellow}WARNING${NC}  ]"
 
-CURRENTDATE=$(date +"%Y-%m-%d")
+(
 
-#
-# output information about the log file location
-#
-#
-mkdir --parent --verbose /opt/setup 
-cd /opt/setup
+CONF_PATH='/opt/setup/'
+CONF_FILE="$CONF_PATH/setup.conf"
 
-if ! [ -f '/opt/setup/setup.conf' ]; then
+mkdir --parent --verbose "$CONF_PATH"
+cd "$CONF_PATH"
+
+if ! [ -f "$CONF_FILE" ]; then
 	echo -e 'could not find setup.conf file...' $WARNING
-	wget https://raw.githubusercontent.com/Nerigal/LISK/master/setup.conf '/opt/setup/setup.conf'	
+	wget https://raw.githubusercontent.com/Nerigal/LISK/master/setup.conf -O "$CONF_FILE"
 fi
 
-. '/opt/setup/setup.conf'
+wget https://raw.githubusercontent.com/Nerigal/LISK/lib/master/libShUtils.sh -O "$CONF_PATH/libShUtils"
 
-function mandatory()
-{
-	if [ -z $1 ]; then
-		echo -e "Please verify setup.conf ${2}" $ERROR
-		exit 1
-	fi
-}
+if [ ! -f './libShUtils' ]; then
+ echo 'Could Not find libShUtils'
+ exit 1
+else
+. './libShUtils'
+fi
 
-function exists()
-{
-	if [ -z $1 ]; then
-		echo -e "You should consider configuring ${2} in Setup.conf"  $WARNING
-	fi
-}
+. "$CONF_FILE"
+
+
 
 mandatory ${CSF[allow_ipaddr]} 'CSF[allow_ipaddr]'
 mandatory ${CSF[ui_user]}  'CSF[ui_user]'
@@ -61,9 +52,27 @@ exists ${CSF[ui_port]} 'CSF[ui_port]'
 
 
 if [ -n ${CSF[LF_ALERT_FROM]} ]; then 
-
-CSF[LF_ALERT_FROM]=`hostname -s`'CSF'@`hostname`
+    CSF[LF_ALERT_FROM]=`hostname -s`'CSF'@`hostname`
 fi 
+
+
+if [ -f csf.tgz ]; then 
+	rm -f csf.tgz
+fi
+
+if [ -d csf ]; then
+	rm -fr csf/
+fi
+
+
+if ! [ -f /usr/sbin/ipset ]; then
+	echo 'Installing ipset'
+	if [ -f '/etc/redhat-release' ]; then
+        yum install ipset -y
+    else
+        apt-get install ipset -y 
+    fi
+fi
 
 # validation prerequisite
 if  [ ! -f /usr/sbin/ipset ] && [ ! -f /sbin/ipset ]; then
@@ -72,386 +81,242 @@ if  [ ! -f /usr/sbin/ipset ] && [ ! -f /sbin/ipset ]; then
 	exit 1
 fi
 
-if [ ! -f /usr/bin/wget ] && [ ! -f /usr/local/bin/wget ] ; then
-	echo -n 'could not find ipset, please install wget... '
-	echo -e $ERRORE
-	exit 1
-fi	
 
-(
-echo -n 'Checking CSF installtion... '
-if [ -f '/etc/csf/csf.conf' ]; then
-	echo -e $OK
-else
-	echo -e $WARNING 
-	echo 'Starting CSF Setup... '
-	cd ${GLOBAL[setup_path]} 
-	if [ $? -eq 1 ]; then 		
-		echo -e 'Setup Folder Not Found' $WARNING
-		mkdir --parent --verbose ${GLOBAL[setup_path]} && cd ${GLOBAL[setup_path]}
-		if [ $? -eq 0 ]; then
-			echo -e $OK
-		else
-			echo -e $ERROR
-		fi
-	fi
-	
-	echo -n 'Checking for old package... '
-	if [ -f csf.tgz ]; then 
-		echo -e $WARNING
-		rm -f 'csf.tgz'
-	else
-		echo -e $OK
-	fi
-	
-	echo -n 'Checking for old package... '
-	if [ -d csf ]; then
-		echo -e $WARNING
-		rm -fr csf/
-	else
-		echo -e $OK		
-	fi
-
-	# install csf 
-	wget https://download.configserver.com/csf.tgz csf.tgz
+cd "$CONF_PATH"
+rm -fv csf.tgz
+wget https://download.configserver.com/csf.tgz
+tar -xzf csf.tgz
+cd csf
+bash install.sh
 
 
-	if [ -f csf.tgz ]; then
-		echo 'Extracting csf.tgz... '
-		tar zxf csf.tgz
-		sleep 1
-		if [ -d csf ]; then
-			cd csf/
-			chmod +x ./install.sh
-			echo 'Installing csf... '		
-			./install.sh &> /dev/null
-		fi # if csf folder exist	
-	fi # if csf.tgz
-	sleep 1		
-	echo 'CSF install Completed... '
-fi # if conf file
-
-if [ -f /etc/csf/csf.conf ]; then
-
-	csfconfig=/etc/csf/csf.conf
-	csfblocklists=/etc/csf/csf.blocklists
-	csfignore=/etc/csf/csf.ignore
-	csfpignore=/etc/csf/csf.pignore
-	csfallow=/etc/csf/csf.allow
-	csfuiallow=/etc/csf/ui/ui.allow
-	
-	echo 'Backing up Config Files... '
-	if ! [ -f /etc/csf/csf.conf-$CURRENTDATE ]; then
-		cp --verbose $csfconfig /etc/csf/csf.conf-$CURRENTDATE
-	fi
-	
-	if ! [ -f /etc/csf/csf.conf-$CURRENTDATE ]; then
-		cp --verbose $csfblocklists /etc/csf/csf.blocklists-$CURRENTDATE
-	fi
-
-	if ! [ -f /etc/csf/csf.allow-$CURRENTDATE ]; then
-		cp --verbose $csfallow /etc/csf/csf.allow-$CURRENTDATE
-	fi
-
-	if ! [ -f /etc/csf/csf.ignore-$CURRENTDATE ]; then
-		cp --verbose $csfignore /etc/csf/csf.ignore-$CURRENTDATE
-	fi
-
-	sleep 1
-	#####################################################################################################################################
-	
-	
-	function add_config()
-	{
-		Param=$1
-		ConfigFile=$2
-		Msg=$3
-		File=$4
-		
-		if ! grep -q "${Param}" "${ConfigFile}"; then
-			echo -e "Checking param ${Param} to ${ConfigFile}"  $OK			
-			
-			if [ ${File} == 'N/A' ]; then
-				if ! [ ${Msg} == 'N/A' ]; then
-					echo "${Param} # ${Msg}" >> "${ConfigFile}"
-				else
-					echo "${Param}" >> "${ConfigFile}"
-				fi
-			else
-				if [ -f ${File} ];then 
-					if ! [ ${Msg} == 'N/A' ]; then
-						echo "${Param} # ${Msg}" >> "${ConfigFile}"
-					else
-						echo "${Param}" >> "${ConfigFile}"
-					fi
-				else
-					echo "File ${File} No found on your system... "
-				fi
-			fi		
-			
-		else
-			echo -e "${Param} Already set in ${ConfigFile}" $WARNING
-		fi
-	}
-	#-------------------------------------------------------------------------------------------------------------------------------------
-	
-	if ! [[ -z ${CSFPOSTRULES[@]} ]] ; then
-		echo '#!/bin/bash' > /etc/csf/csfpost.sh
-		for rule in "${CSFPOSTRULES[@]}"
-		do
-		 echo "$rule" >> /etc/csf/csfpost.sh
-		done
-	fi
-
-	
-	#-------------------------------------------------------------------------------------------------------------------------------------
-	# csf.ignore
-	
-	echo 'Editing csf.ignore'
-	add_config '127.0.0.1'			$csfignore 'loopback ip' 'N/A'
-	add_config ${CSF[allow_ipaddr]}	$csfignore 'External ip' 'N/A'
-
-	#-------------------------------------------------------------------------------------------------------------------------------------
-
-	############################################################ csf.pignore #############################################################
-
-	add_config 'user:'${GLOBAL[liskuser]}'' 		$csfpignore 'N/A' 'N/A' 
-	
-	add_config 'exe:/usr/libexec/postfix/smtp'		$csfpignore 'N/A' '/usr/libexec/postfix/smtp'
-	add_config 'exe:/usr/libexec/postfix/local' 	$csfpignore 'N/A' '/usr/libexec/postfix/local'
-	add_config 'exe:/usr/libexec/postfix/qmgr'		$csfpignore 'N/A' '/usr/libexec/postfix/qmgr'
-	
-	add_config 'exe:/usr/lib/postfix/sbin/smtp'		$csfpignore 'N/A' '/usr/lib/postfix/sbin/smtp'
-	add_config 'exe:/usr/lib/postfix/sbin/local'	$csfpignore 'N/A' '/usr/lib/postfix/sbin/local'
-	add_config 'exe:/usr/lib/postfix/sbin/qmgr' 	$csfpignore 'N/A' '/usr/lib/postfix/sbin/qmgr'
-	add_config 'exe:/usr/sbin/snmpd' 				$csfpignore 'N/A' '/usr/sbin/snmpd'
-	
-	##################################################### END OF csf.pignore #############################################################
+csfconfig=/etc/csf/csf.conf
+csfblocklists=/etc/csf/csf.blocklists
+csfignore=/etc/csf/csf.ignore
+csfallow=/etc/csf/csf.allow
+csfpignore=/etc/csf/csf.pignore
 
 
-	############################################################ csf.allow #############################################################
-	sleep 1
+echo '# Configuring CSF'
+setparam "TESTING =" "TESTING = \"0\"" $csfconfig
 
-	# Adding localhost to csf.allow
-	add_config '127.0.0.1' $csfallow 'loopback ip' 'N/A'
-	
-	# Adding External ip to csf.allow 
-	add_config ${CSF[allow_ipaddr]} $csfallow 'External ip' 'N/A'
+echo "${CSF[allow_ipaddr]}" >> $csfallow
 
-	############################################################ END OF csf.allow ######################################################
+echo '# Enable auto updates'
+setparam "AUTO_UPDATES =" "AUTO_UPDATES = \"1\"" $csfconfig
+echo '# Enable Stateful Packet Inspection (SPI) firewall'
+setparam "LF_SPI =" "LF_SPI = \"0\"" $csfconfig
+echo '# Enable strict IPV6 ICMP option'
+setparam "IPV6_ICMP_STRICT =" "IPV6_ICMP_STRICT = \"1\"" $csfconfig
+setparam "IPV6_SPI =" "IPV6_SPI = \"0\"" $csfconfig
 
-	# Adding External ip to /etc/csf/ui/ui.allow 
-	add_config ${CSF[allow_ipaddr]} $csfuiallow 'External ip' 'N/A'
 
-	########################################################## csf.blocklists ########################################################## 
-	sleep 1
-	# Spamhaus Dont Route Or Peer List (DROP)
-	# Details: http://www.spamhaus.org/drop/
-	# sed -r -n 's/^(#?SPAMDROP.*)/\1/p' /etc/csf/csf.blocklists
-	# sed -r -n 's/^#(SPAMDROP.*)/\1/p' /etc/csf/csf.blocklists
-	if grep -Pq '^#SPAMDROP.*drop\.lasso' $csfblocklists; then
-		echo 'SPAMDROP' $csfblocklists
-		sed -r -i 's/^#(SPAMDROP.*drop\.lasso)/\1/g' $csfblocklists			
-	fi
-	
-	# Spamhaus Extended DROP List (EDROP)
-	# Details: http://www.spamhaus.org/drop/
-	if grep -Pq '^#SPAMEDROP.*edrop\.lasso' $csfblocklists; then
-		echo 'SPAMEDROP' $csfblocklists
-		sed -r -i 's/^#(SPAMEDROP.*edrop\.lasso)/\1/g' $csfblocklists
-	fi
-	
-	# DShield.org Recommended Block List
-	# Details: http://dshield.org
-	if grep -Pq '^#DSHIELD.*' $csfblocklists; then
-		echo 'DSHIELD' $csfblocklists
-		sed -r -i 's/^#?(DSHIELD.*)/\1/g' $csfblocklists
-	fi
-	
-	# TOR Exit Nodes List
-	# Set URLGET in csf.conf to use LWP as this list uses an SSL connection
-	# Details: https://trac.torproject.org/projects/tor/wiki/doc/TorDNSExitList
-	if grep -Pq '^#TOR.*' $csfblocklists; then
-		echo 'TOR' $csfblocklists
-		sed -r -i 's/^#?(TOR.*)/\1/g' $csfblocklists
-	fi
-	
-	# Alternative TOR Exit Nodes List
-	# Details: http://torstatus.blutmagie.de/
-	if grep -Pq '^#ALTTOR.*' $csfblocklists; then
-		echo 'ALTTOR' $csfblocklists
-		sed -r -i 's/^#?(ALTTOR.*)/\1/g' $csfblocklists
-	fi
-	
-	# BOGON list
-	# Details: http://www.team-cymru.org/Services/Bogons/
-	if grep -Pq '^#BOGON.*' $csfblocklists; then
-		echo 'BOGON' $csfblocklists
-		sed -r -i 's/^#?(BOGON.*)/\1/g' $csfblocklists
-	fi
-	
-	# Project Honey Pot Directory of Dictionary Attacker IPs
-	# Details: http://www.projecthoneypot.org
-	if grep -Pq '^#HONEYPOT.*' $csfblocklists; then
-		echo 'HONEYPOT' $csfblocklists
-		sed -r -i 's/^#?(HONEYPOT.*)/\1/g' $csfblocklists
-	fi
-
-	# C.I. Army Malicious IP List
-	# Details: http://www.ciarmy.com
-	if grep -Pq '^#CIARMY.*' $csfblocklists; then
-		echo 'CIARMY' $csfblocklists
-		sed -r -i 's/^#?(CIARMY.*)/\1/g' $csfblocklists
-	fi
-
-	# BruteForceBlocker IP List
-	# Details: http://danger.rulez.sk/index.php/bruteforceblocker/
-	if grep -Pq '^#BFB.*' $csfblocklists; then
-		echo 'BFB' $csfblocklists
-		sed -r -i 's/^#?(BFB.*)/\1/g' $csfblocklists
-	fi
-
-	# OpenBL.org 30 day List
-	# Set URLGET in csf.conf to use LWP as this list uses an SSL connection
-	# Details: https://www.openbl.org
-	if grep -Pq '^#OPENBL.*' $csfblocklists; then
-		echo 'OPENBL' $csfblocklists
-		sed -r -i 's/^#?(OPENBL.*)/\1/g' $csfblocklists
-	fi
-
-	# Autoshun Shun List
-	# Details: http://www.autoshun.org/
-	if grep -Pq '^#AUTOSHUN.*' $csfblocklists; then
-		echo 'AUTOSHUN' $csfblocklists
-		sed -r -i 's/^#?(AUTOSHUN.*)/\1/g' $csfblocklists
-	fi
-
-	# MaxMind GeoIP Anonymous Proxies
-	# Set URLGET in csf.conf to use LWP as this list uses an SSL connection
-	# Details: https://www.maxmind.com/en/anonymous_proxies
-	if grep -Pq '^#MAXMIND.*' $csfblocklists; then
-		echo 'MAXMIND' $csfblocklists
-		sed -r -i 's/^#?(MAXMIND.*)/\1/g' $csfblocklists
-	fi
-	
-	# Blocklist.de
-	# Set URLGET in csf.conf to use LWP as this list uses an SSL connection
-	# Details: https://www.blocklist.de
-	# This first list only retrieves the IP addresses added in the last hour
-	if grep -Pq '^#BDE.*' $csfblocklists; then
-		echo 'BDE' $csfblocklists
-		sed -r -i 's/^#?(BDE.*)/\1/g' $csfblocklists
-	fi
-
-	# This second list retrieves all the IP addresses added in the last 48 hours
-	# and is usually a very large list (over 10000 entries), so be sure that you
-	# have the resources available to use it
-	if grep -Pq '^#BDEALL.*' $csfblocklists; then
-		echo 'BDEALL' $csfblocklists
-		sed -r -i 's/^#?(BDEALL.*)/\1/g' $csfblocklists
-	fi
-
-	# Stop Forum Spam
-	# Details: http://www.stopforumspam.com/downloads/
-	# Many of the lists available contain a vast number of IP addresses so special
-	# care needs to be made when selecting from their lists
-	if grep -Pq '^#STOPFORUMSPAM.*' $csfblocklists; then
-		echo 'STOPFORUMSPAM' $csfblocklists
-		sed -r -i 's/^#?(STOPFORUMSPAM.*)/\1/g' $csfblocklists
-	fi
-
-	########################################################## END OF csf.blocklists ##################################################
-
-	########################################################## CSF Config ##############################################################
 sleep 1
-	echo 'Changing config in CSF config file ... '
-	sed -r -i 's/^#?TESTING =.*/TESTING = "0"/g' $csfconfig
-	sed -r -i 's/^#?AUTO_UPDATES =.*/AUTO_UPDATES = "1"/g' $csfconfig
-	sed -r -i 's/^#?LF_SPI =.*/LF_SPI = "1"/g' $csfconfig
-	
-	# Allow incoming TCP ports
-	sed -r -i 's/^#?TCP_IN =.*/TCP_IN = "'${CSF[TCP_IN]}'"/g' $csfconfig
 
-	# Allow outgoing TCP ports
-	sed -r -i 's/^#?TCP_OUT =.*/TCP_OUT = "'${CSF[TCP_OUT]}'"/g' $csfconfig
+if ! grep -q '127.0.0.1' $csfallow; then	
+	echo 'Adding localhost to csf.allow'
+	echo '127.0.0.1 # localhost' >> $csfallow
+fi
 
-	# Allow incoming UDP ports
-	sed -r -i 's/^#?UDP_IN =.*/UDP_IN = "'${CSF[UDP_IN]}'"/g' $csfconfig
-
-	# Allow outgoing UDP ports
-	# To allow outgoing traceroute add 33434:33523 to this list 
-	sed -r -i 's/^#?UDP_OUT =.*/UDP_OUT = "'${CSF[UDP_OUT]}'"/g' $csfconfig
-	
-	sed -r -i 's/^#?IPV6_ICMP_STRICT =.*/IPV6_ICMP_STRICT = "1"/g' $csfconfig
-	sed -r -i 's/^#?IPV6_SPI =.*/IPV6_SPI = "0"/g' $csfconfig
-
-	# Allow incoming IPv6 TCP ports
-	sed -r -i 's/^#?TCP6_IN =.*/TCP6_IN = "'${CSF[TCP_IN]}'"/g' $csfconfig
-
-	# Allow outgoing TCP ports
-	sed -r -i 's/^#?TCP6_OUT =.*/TCP6_OUT = "'${CSF[TCP_OUT]}'"/g' $csfconfig
-
-	# Allow incoming UDP ports
-	sed -r -i 's/^#?UDP6_IN =.*/UDP6_IN = ""/g' $csfconfig
-	sed -r -i 's/^#?UDP6_OUT =.*/UDP6_OUT = "53,123"/g' $csfconfig
-	sed -r -i 's/^#?USE_CONNTRACK =.*/USE_CONNTRACK = "1"/g' $csfconfig
-	sed -r -i 's/^#?SYSLOG_CHECK =.*/SYSLOG_CHECK = "300"/g' $csfconfig
-	sed -r -i 's/^#?DENY_IP_LIMIT =.*/DENY_IP_LIMIT = "5000"/g' $csfconfig
-	sed -r -i 's/^#?DENY_TEMP_IP_LIMIT =.*/DENY_TEMP_IP_LIMIT = "1000"/g' $csfconfig	
-	sed -r -i 's/^#?LF_IPSET =.*/LF_IPSET = "1"/g' $csfconfig
-	sed -r -i 's/^#?LFDSTART =.*/LFDSTART = "1"/g' $csfconfig
-	sed -r -i 's/^#?SMTP_ALLOWUSER =.*/SMTP_ALLOWUSER = ""/g' $csfconfig
-	sed -r -i 's/^#?SYNFLOOD =.*/SYNFLOOD = "1"/g' $csfconfig
-	sed -r -i 's/^#?PORTFLOOD =.*/PORTFLOOD = "0"/g' $csfconfig
-	sed -r -i 's/^#?DROP_IP_LOGGING =.*/DROP_IP_LOGGING = "1"/g' $csfconfig
-	sed -r -i 's/^#?DROP_PF_LOGGING =.*/DROP_PF_LOGGING = "1"/g' $csfconfig
-	sed -r -i 's/^#?LOGFLOOD_ALERT =.*/LOGFLOOD_ALERT = "1"/g' $csfconfig
-	sed -r -i 's/^#?LF_ALERT_TO =.*/LF_ALERT_TO = "'${CSF[alert_email]}'"/g' $csfconfig	
-	sed -r -i 's/^#?LF_ALERT_FROM =.*/LF_ALERT_FROM = "'${CSF[LF_ALERT_FROM]}'"/g' $csfconfig			
-	sed -r -n 's/^#?BLOCK_REPORT.*/BLOCK_REPORT = "1"/p' /etc/csf/csf.conf 
-	sed -r -i 's/^#?BLOCK_REPORT =.*/BLOCK_REPORT = "1"/g' $csfconfig
-	sed -r -i 's/^#?LF_PERMBLOCK_INTERVAL =.*/LF_PERMBLOCK_INTERVAL = "86400"/g' $csfconfig
-	sed -r -i 's/^#?LF_PERMBLOCK_COUNT =.*/LF_PERMBLOCK_COUNT = "10"/g' $csfconfig
-	sed -r -i 's/^#?SAFECHAINUPDATE =.*/SAFECHAINUPDATE = "1"/g' $csfconfig
-	sed -r -i 's/^#?CC_INTERVAL =.*/CC_INTERVAL = "1"/g' $csfconfig
-	sed -r -i 's/^#?LF_POP3D =.*/LF_POP3D = "0"/g' $csfconfig
-	sed -r -i 's/^#?LF_IMAPD =.*/LF_IMAPD = "0"/g' $csfconfig
-	sed -r -i 's/^#?LF_WEBMIN_EMAIL_ALERT =.*/LF_WEBMIN_EMAIL_ALERT = "0"/g' $csfconfig
-	sed -r -i 's/^#?LF_CONSOLE_EMAIL_ALERT =.*/LF_CONSOLE_EMAIL_ALERT = "0"/g' $csfconfig
-	sed -r -i 's/^#?LF_INTERVAL =.*/LF_INTERVAL = "300"/g' $csfconfig
-	sed -r -i 's/^#?LF_DIRWATCH_FILE =.*/LF_DIRWATCH_FILE = "60"/g' $csfconfig
-	sed -r -i 's/^#?LF_DISTFTP =.*/LF_DISTFTP = "1"/g' $csfconfig
-	sed -r -i 's/^#?LF_DISTFTP_UNIQ =.*/LF_DISTFTP_UNIQ = "5"/g' $csfconfig
-	sed -r -i 's/^#?PT_USERMEM =.*/PT_USERMEM = "500"/g' $csfconfig
-	sed -r -i 's/^#?PT_USERTIME =.*/PT_USERTIME = "14400"/g' $csfconfig
-	sed -r -i 's/^#?PT_LOAD_LEVEL =.*/PT_LOAD_LEVEL = "2"/g' $csfconfig
-	sed -r -i 's/^#?PS_INTERVAL =.*/PS_INTERVAL = "60"/g' $csfconfig
-	sed -r -i 's/^#?PS_DIVERSITY =.*/PS_DIVERSITY = "5"/g' $csfconfig
-	sed -r -i 's/^#?AT_ALERT =.*/AT_ALERT = "1"/g' $csfconfig
-	sed -r -i 's/^#?UI = "0"/UI = "1"/g' $csfconfig
-	sed -r -i 's/^#?UI_PORT =.*/UI_PORT = "'${CSF[ui_port]}'"/g' $csfconfig
-	sed -r -i 's/^#?UI_USER =.*/UI_USER = "'${CSF[ui_user]}'"/g' $csfconfig
-
-	if grep -Pq 'UI_PASS = \"password\"' $csfconfig ;then
+setparam "TCP_IN =" "TCP_IN = \"${CSF[TCP_IN]}\"" $csfconfig
+setparam "TCP_OUT =" "TCP_OUT = \"${CSF[TCP_OUT]}\"" $csfconfig
+setparam "UDP_IN =" "UDP_IN = \"${CSF[UDP_IN]}\"" $csfconfig
+setparam "UDP_OUT =" "UDP_OUT = \"${CSF[UDP_OUT]}\"" $csfconfig
+setparam "TCP6_IN =" "TCP6_IN = \"${CSF[TCP_IN]}\"" $csfconfig
+setparam "TCP6_OUT =" "TCP6_OUT = \"${CSF[TCP_OUT]}\"" $csfconfig
+setparam "UDP6_IN =" "UDP6_IN = \"${CSF[UDP_IN]}\"" $csfconfig
+setparam "UDP6_OUT =" "UDP6_OUT = \"${CSF[UDP_OUT]}\"" $csfconfig
+setparam "USE_CONNTRACK =" "USE_CONNTRACK = \"1\"" $csfconfig
+setparam "SYSLOG_CHECK =" "SYSLOG_CHECK = \"300\"" $csfconfig
+setparam "DENY_IP_LIMIT =" "DENY_IP_LIMIT = \"5000\"" $csfconfig
+setparam "DENY_TEMP_IP_LIMIT =" "DENY_TEMP_IP_LIMIT = \"1000\"" $csfconfig	
+setparam "LF_IPSET =" "LF_IPSET = \"1\"" $csfconfig
+setparam "LFDSTART =" "LFDSTART = \"1\"" $csfconfig
+setparam "SMTP_ALLOWUSER =" "SMTP_ALLOWUSER = \"\"" $csfconfig
+setparam "SYNFLOOD =" "SYNFLOOD = \"0\"" $csfconfig
+setparam "PORTFLOOD =" "PORTFLOOD = \"0\"" $csfconfig
+setparam "DROP_IP_LOGGING =" "DROP_IP_LOGGING = \"0\"" $csfconfig 
+setparam "DROP_PF_LOGGING =" "DROP_PF_LOGGING = \"1\"" $csfconfig
+setparam "LOGFLOOD_ALERT =" "LOGFLOOD_ALERT = \"1\"" $csfconfig
+setparam "LF_ALERT_TO =" "LF_ALERT_TO = \"${CSF[alert_email]}\"" $csfconfig	
+setparam "LF_ALERT_FROM =" "LF_ALERT_FROM = \"${CSF[LF_ALERT_FROM]}\"" $csfconfig			
+setparam "BLOCK_REPORT = " "BLOCK_REPORT = \"1\"" $csfconfig
+setparam "BLOCK_REPORT =" "BLOCK_REPORT = \"1\"" $csfconfig
+setparam "LF_PERMBLOCK_INTERVAL =" "LF_PERMBLOCK_INTERVAL = \"86400\"" $csfconfig
+setparam "LF_PERMBLOCK_COUNT =" "LF_PERMBLOCK_COUNT = \"10\"" $csfconfig
+setparam "SAFECHAINUPDATE =" "SAFECHAINUPDATE = \"1\"" $csfconfig
+setparam "CC_INTERVAL =" "CC_INTERVAL = \"1\"" $csfconfig
+setparam "LF_POP3D =" "LF_POP3D = \"0\"" $csfconfig
+setparam "LF_IMAPD =" "LF_IMAPD = \"0\"" $csfconfig
+setparam "LF_WEBMIN_EMAIL_ALERT =" "LF_WEBMIN_EMAIL_ALERT = \"0\"" $csfconfig
+setparam "LF_CONSOLE_EMAIL_ALERT =" "LF_CONSOLE_EMAIL_ALERT = \"0\"" $csfconfig
+setparam "LF_INTERVAL =" "LF_INTERVAL = \"300\"" $csfconfig
+setparam "LF_DIRWATCH_FILE =" "LF_DIRWATCH_FILE = \"60\"" $csfconfig
+setparam "LF_DISTFTP =" "LF_DISTFTP = \"1\"" $csfconfig
+setparam "LF_DISTFTP_UNIQ =" "LF_DISTFTP_UNIQ = \"5\"" $csfconfig
+setparam "PT_USERMEM =" "PT_USERMEM = \"0\"" $csfconfig
+setparam "PT_USERTIME =" "PT_USERTIME = \"0\"" $csfconfig
+setparam "PT_LOAD_LEVEL =" "PT_LOAD_LEVEL = \"2\"" $csfconfig
+setparam "PS_INTERVAL =" "PS_INTERVAL = \"60\"" $csfconfig
+setparam "PS_DIVERSITY =" "PS_DIVERSITY = \"5\"" $csfconfig
+setparam "AT_ALERT =" "AT_ALERT = \"1\"" $csfconfig
+setparam "UI =" "UI = \"1\"" $csfconfig
+setparam "UI_PORT =" "UI_PORT = \"${CSF[ui_port]}\"" $csfconfig
+setparam "UI_USER =" "UI_USER = \"${CSF[ui_user]}\"" $csfconfig
+echo '# Set CSF UI password'
+if grep -Pq 'UI_PASS = \"password\"' $csfconfig ;then
 		pass=`tr -cd \!A-Za-z0-9 < /dev/urandom | fold -w16 | head -n1`
 		echo -e $yellow
 		echo 'CSF UI password is... ' $pass
+		echo "UI interface is at https://${CSF[allow_ipaddr]}:${CSF[ui_port]}"
 		echo -e $NC 
 		sed -r -i 's/^#?UI_PASS =.*/UI_PASS = "'$pass'"/g' $csfconfig
 	else
 		echo 'Password already set'
-	fi
-fi # if config file
+fi
 
+########################################################## csf.blocklists ########################################################## 
+sleep 1
+echo 'Configuring Blocklist...'
+# Spamhaus Dont Route Or Peer List (DROP)
+# Details: http://www.spamhaus.org/drop/
+
+echo 'Spamhaus Dont Route Or Peer List...'
+if grep -Pq '^#SPAMDROP.*drop\.lasso' $csfblocklists; then
+	echo 'SPAMDROP' $csfblocklists
+	sed -r -i 's/^#(SPAMDROP.*drop\.lasso)/\1/g' $csfblocklists			
+fi
+
+echo 'Spamhaus Extended DROP List (EDROP)...'
+# Details: http://www.spamhaus.org/drop/
+if grep -Pq '^#SPAMEDROP.*edrop\.lasso' $csfblocklists; then
+	echo 'SPAMEDROP' $csfblocklists
+	sed -r -i 's/^#(SPAMEDROP.*edrop\.lasso)/\1/g' $csfblocklists
+fi
+
+echo 'DShield.org Recommended Block List...'
+# Details: http://dshield.org
+if grep -Pq '^#DSHIELD.*' $csfblocklists; then
+	echo 'DSHIELD' $csfblocklists
+	sed -r -i 's/^#?(DSHIELD.*)/\1/g' $csfblocklists
+fi
+
+echo 'TOR Exit Nodes List...'
+# Set URLGET in csf.conf to use LWP as this list uses an SSL connection
+# Details: https://trac.torproject.org/projects/tor/wiki/doc/TorDNSExitList
+if grep -Pq '^#TOR.*' $csfblocklists; then
+	echo 'TOR' $csfblocklists
+	sed -r -i 's/^#?(TOR.*)/\1/g' $csfblocklists
+fi
+
+echo 'Alternative TOR Exit Nodes List...'
+# Details: http://torstatus.blutmagie.de/
+if grep -Pq '^#ALTTOR.*' $csfblocklists; then
+	echo 'ALTTOR' $csfblocklists
+	sed -r -i 's/^#?(ALTTOR.*)/\1/g' $csfblocklists
+fi
+
+echo 'BOGON list...'
+# Details: http://www.team-cymru.org/Services/Bogons/
+if grep -Pq '^#BOGON.*' $csfblocklists; then
+	echo 'BOGON' $csfblocklists
+	sed -r -i 's/^#?(BOGON.*)/\1/g' $csfblocklists
+fi
+
+echo 'Project Honey Pot Directory of Dictionary Attacker IPs...'
+# Details: http://www.projecthoneypot.org
+if grep -Pq '^#HONEYPOT.*' $csfblocklists; then
+	echo 'HONEYPOT' $csfblocklists
+	sed -r -i 's/^#?(HONEYPOT.*)/\1/g' $csfblocklists
+fi
+
+echo 'C.I. Army Malicious IP List...'
+# Details: http://www.ciarmy.com
+if grep -Pq '^#CIARMY.*' $csfblocklists; then
+	echo 'CIARMY' $csfblocklists
+	sed -r -i 's/^#?(CIARMY.*)/\1/g' $csfblocklists
+fi
+
+echo 'BruteForceBlocker IP List...'
+# Details: http://danger.rulez.sk/index.php/bruteforceblocker/
+if grep -Pq '^#BFB.*' $csfblocklists; then
+	echo 'BFB' $csfblocklists
+	sed -r -i 's/^#?(BFB.*)/\1/g' $csfblocklists
+fi
+
+echo 'OpenBL.org 30 day List...'
+# Set URLGET in csf.conf to use LWP as this list uses an SSL connection
+# Details: https://www.openbl.org
+if grep -Pq '^#OPENBL.*' $csfblocklists; then
+	echo 'OPENBL' $csfblocklists
+	sed -r -i 's/^#?(OPENBL.*)/\1/g' $csfblocklists
+fi
+
+echo 'Autoshun Shun List...'
+# Details: http://www.autoshun.org/
+if grep -Pq '^#AUTOSHUN.*' $csfblocklists; then
+	echo 'AUTOSHUN' $csfblocklists
+	sed -r -i 's/^#?(AUTOSHUN.*)/\1/g' $csfblocklists
+fi
+
+echo 'MaxMind GeoIP Anonymous Proxies...'
+# Set URLGET in csf.conf to use LWP as this list uses an SSL connection
+# Details: https://www.maxmind.com/en/anonymous_proxies
+if grep -Pq '^#MAXMIND.*' $csfblocklists; then
+	echo 'MAXMIND' $csfblocklists
+	sed -r -i 's/^#?(MAXMIND.*)/\1/g' $csfblocklists
+fi
+
+echo 'Blocklist.de...'
+# Set URLGET in csf.conf to use LWP as this list uses an SSL connection
+# Details: https://www.blocklist.de
+# This first list only retrieves the IP addresses added in the last hour
+if grep -Pq '^#BDE.*' $csfblocklists; then
+	echo 'BDE' $csfblocklists
+	sed -r -i 's/^#?(BDE.*)/\1/g' $csfblocklists
+fi
+
+# This second list retrieves all the IP addresses added in the last 48 hours
+# and is usually a very large list (over 10000 entries), so be sure that you
+# have the resources available to use it
+echo 'BDEALL...'
+if grep -Pq '^#BDEALL.*' $csfblocklists; then
+	echo 'BDEALL' $csfblocklists
+	sed -r -i 's/^#?(BDEALL.*)/\1/g' $csfblocklists
+fi
+
+echo 'Stop Forum Spam...'
+# Details: http://www.stopforumspam.com/downloads/
+# Many of the lists available contain a vast number of IP addresses so special
+# care needs to be made when selecting from their lists
+if grep -Pq '^#STOPFORUMSPAM.*' $csfblocklists; then
+	echo 'STOPFORUMSPAM' $csfblocklists
+	sed -r -i 's/^#?(STOPFORUMSPAM.*)/\1/g' $csfblocklists
+fi
+
+########################################################## END OF csf.blocklists ##################################################
+
+############################################################ csf.pignore #############################################################
+echo 'Adding SNMP to process ignore'
+setparam "exe:/usr/sbin/snmpd" $csfpignore
+
+##################################################### END OF csf.pignore #############################################################
+
+#
+# Reload CSF config
+#
 if [ -f /etc/csf/csf.error ]; then 
 	echo 'Removeing /etc/csf/csf.error'
 	rm -f /etc/csf/csf.error
 fi
 
-csf -x > /dev/null && csf -e > /dev/null
-rm -f --verbose /etc/csf/csf.error
+csf -x && csf -e
 
-) 2>&1 | /usr/bin/tee "${GLOBAL[setup_path]}/csf-setup.log" --append
+##############################################
+# CSF Firewall - END
+##############################################
+
+) 2>&1 | /usr/bin/tee /root/setup/csf-setup.log --append
 
 
 if [[ $RETVAL -eq 0 ]]; then
@@ -479,13 +344,4 @@ if [[ $RETVAL -eq 0 ]]; then
 	echo -e $NC                                                                                      
 fi
 
-
-
 ########################################################## END OF CSF CONFIG #######################################################
-# Good Song !! 
-# https://www.youtube.com/watch?v=M_TBENcax_g
-# https://www.youtube.com/watch?v=ZMbFu457jGs
-# https://www.youtube.com/watch?v=KBuiI1lNO-s
-#
-
-
