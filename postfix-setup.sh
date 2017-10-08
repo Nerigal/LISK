@@ -32,33 +32,20 @@ if ! [ -f "$CONF_FILE" ]; then
 	exit 1
 fi
 
+wget https://raw.githubusercontent.com/Nerigal/LISK/master/lib/libShUtil.sh -O "$CONF_PATH/libShUtil"
+
+if [ ! -f './libShUtil' ]; then
+    echo 'Could Not find libShUtil'
+    exit 1
+else
+. './libShUtil'
+fi
+
 . "$CONF_FILE"
 
-function exists()
-{
-	if [ -z $1 ]; then
-		echo -e "Please verify $CONF_PATH/$CONF_FILE" $ERROR
-		exit 1
-	fi
-}
-
-exists ${GLOBAL[setup_path]}
-exists ${GLOBAL[ipaddr]}
-exists ${GLOBAL[hostname]}
-exists ${POSTFIX[config_file]}
-
-# config, value, file
-function setconfig()
-{
-	echo -n "Checking configration ${1}... "
-	if grep -q "${1}" "${3}"; then
-		echo -e $OK
-		sed -r -i 's/^'"${1}"'.*/'"${1}"' = '"${2}"'/g' "${3}"
-	else
-		echo -e $OK
-		echo "${1} = ${2}" >> "${3}"
-	fi
-}
+mandatory ${GLOBAL[ipaddr]}
+mandatory ${GLOBAL[hostname]}
+mandatory ${POSTFIX[config_file]}
 
 echo 'Creating backup of the config file ...  '
 if ! [ -f "${POSTFIX[config_file]}-$CURRENTDATE" ]; then
@@ -67,15 +54,15 @@ fi
 
 echo  'Checking Postfix config... '
 if [ $? -eq 0 ]; then
-	setconfig 'inet_interfaces' 'localhost' ${POSTFIX[config_file]}
-	setconfig 'inet_protocols' 'ipv4' ${POSTFIX[config_file]}
-	setconfig 'smtpd_timeout' '3600s' ${POSTFIX[config_file]}
-	setconfig 'smtpd_proxy_timeout' '3600s' ${POSTFIX[config_file]}
-	setconfig 'disable_vrfy_command' 'yes' ${POSTFIX[config_file]}
-	setconfig 'message_size_limit' '26214400' ${POSTFIX[config_file]}
-	setconfig 'smtp_bind_address' ${GLOBAL[ipaddr]} ${POSTFIX[config_file]}	
-	setconfig 'myorigin' '$myhostname' ${POSTFIX[config_file]}
-	setconfig 'myhostname' ${GLOBAL[hostname]} ${POSTFIX[config_file]} 
+	setparam 'inet_interfaces' 'inet_interfaces = localhost' ${POSTFIX[config_file]}
+	setparam 'inet_protocols' 'inet_protocols = ipv4' ${POSTFIX[config_file]}
+	setparam 'smtpd_timeout' 'smtpd_timeout = 3600s' ${POSTFIX[config_file]}
+	setparam 'smtpd_proxy_timeout' 'smtpd_proxy_timeout = 3600s' ${POSTFIX[config_file]}
+	setparam 'disable_vrfy_command' 'disable_vrfy_command = yes' ${POSTFIX[config_file]}
+	setparam 'message_size_limit' 'message_size_limit = 26214400' ${POSTFIX[config_file]}
+	setparam 'smtp_bind_address' "smtp_bind_address = ${GLOBAL[ipaddr]}" ${POSTFIX[config_file]}	
+	setparam 'myorigin' 'myorigin = $myhostname' ${POSTFIX[config_file]}
+	setparam 'myhostname' "myhostname = ${GLOBAL[hostname]}" ${POSTFIX[config_file]} 
 	systemctl restart postfix.service
 fi
 
