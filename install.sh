@@ -40,6 +40,9 @@ EOF_updatedb_script
 chmod +x /etc/cron.daily/updatedb
 
 CONF_PATH='/opt/setup'
+CONF_FILE="$CONF_PATH/setup.conf"
+mkdir --parent --verbose "$CONF_PATH"
+cd "$CONF_PATH"
 
 wget https://raw.githubusercontent.com/Nerigal/LISK/master/lib/libShUtil.sh -O "$CONF_PATH/libShUtil"
 
@@ -50,6 +53,7 @@ else
 . './libShUtil'
 fi
 
+
 if ! [ -f "$CONF_FILE" ]; then
 	echo -e 'could not find setup.conf file...' 
 	wget https://raw.githubusercontent.com/Nerigal/LISK/master/setup.conf -O "$CONF_PATH/setup.conf"
@@ -57,11 +61,6 @@ if ! [ -f "$CONF_FILE" ]; then
 	exit 1
 fi
 
-
-CONF_FILE="$CONF_PATH/setup.conf"
-
-mkdir --parent --verbose "$CONF_PATH"
-cd "$CONF_PATH"
 
 
 #######################################################################################################################################################
