@@ -51,6 +51,8 @@ fi
 if ! [ -f "$CONF_FILE" ]; then
 	echo -e 'could not find setup.conf file...' $WARNING
 	wget https://raw.githubusercontent.com/Nerigal/LISK/master/setup.conf -O "$CONF_FILE"
+	echo 'Edit the config file to fit your setup and run the install again'
+	exit 1
 fi
 
 
