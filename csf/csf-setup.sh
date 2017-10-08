@@ -17,7 +17,7 @@
 
 (
 
-CONF_PATH='/opt/setup/'
+CONF_PATH='/opt/setup'
 CONF_FILE="$CONF_PATH/setup.conf"
 
 mkdir --parent --verbose "$CONF_PATH"
@@ -316,7 +316,7 @@ csf -x && csf -e
 # CSF Firewall - END
 ##############################################
 
-) 2>&1 | /usr/bin/tee /root/setup/csf-setup.log --append
+) 2>&1 | /usr/bin/tee "$CONF_PATH/csf-setup.log" --append
 
 
 if [[ $RETVAL -eq 0 ]]; then
