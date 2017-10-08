@@ -24,8 +24,10 @@ mkdir --parent --verbose "$CONF_PATH"
 cd "$CONF_PATH"
 
 if ! [ -f "$CONF_FILE" ]; then
-	echo -e 'could not find setup.conf file...' $WARNING
-	wget https://raw.githubusercontent.com/Nerigal/LISK/master/setup.conf -O "$CONF_FILE"
+	echo -e 'could not find setup.conf file...' 
+	wget https://raw.githubusercontent.com/Nerigal/LISK/master/setup.conf -O "$CONF_PATH/setup.conf"
+	echo 'Edit the config file to fit your setup and run the install again'
+	exit 1
 fi
 
 wget https://raw.githubusercontent.com/Nerigal/LISK/master/lib/libShUtil.sh -O "$CONF_PATH/libShUtil"
