@@ -28,14 +28,15 @@ if ! [ -f "$CONF_FILE" ]; then
 	wget https://raw.githubusercontent.com/Nerigal/LISK/master/setup.conf -O "$CONF_FILE"
 fi
 
-wget https://raw.githubusercontent.com/Nerigal/LISK/lib/master/libShUtils.sh -O "$CONF_PATH/libShUtils"
+wget https://raw.githubusercontent.com/Nerigal/LISK/master/lib/libShUtil.sh -O "$CONF_PATH/libShUtil"
 
-if [ ! -f './libShUtils' ]; then
- echo 'Could Not find libShUtils'
- exit 1
+if [ ! -f './libShUtil' ]; then
+    echo 'Could Not find libShUtil'
+    exit 1
 else
-. './libShUtils'
+. './libShUtil'
 fi
+
 
 . "$CONF_FILE"
 
