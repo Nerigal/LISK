@@ -19,20 +19,25 @@ WARNING="[  ${yellow}WARNING${NC}  ]"
 
 CURRENTDATE=$(date +"%Y-%m-%d")
 
-mkdir --parent --verbose /opt/setup 
-cd /opt/setup
+CONF_PATH='/opt/setup'
+CONF_FILE="$CONF_PATH/setup.conf"
 
-if ! [ -f '/opt/setup/setup.conf' ]; then
-	echo -e 'could not find setup.conf file...' $WARNING
-	wget https://raw.githubusercontent.com/Nerigal/LISK/master/setup.conf '/opt/setup/setup.conf'	
+mkdir --parent --verbose "$CONF_PATH"
+cd "$CONF_PATH"
+
+if ! [ -f "$CONF_FILE" ]; then
+	echo -e 'could not find setup.conf file...' 
+	wget https://raw.githubusercontent.com/Nerigal/LISK/master/setup.conf -O "$CONF_PATH/setup.conf"
+	echo 'Edit the config file to fit your setup and run the install again'
+	exit 1
 fi
 
-. '/opt/setup/setup.conf'
+. "$CONF_FILE"
 
 function exists()
 {
 	if [ -z $1 ]; then
-		echo -e "Please verify /opt/setup/setup.conf" $ERROR
+		echo -e "Please verify $CONF_PATH/$CONF_FILE" $ERROR
 		exit 1
 	fi
 }
