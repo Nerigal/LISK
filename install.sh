@@ -39,12 +39,6 @@ EOF_updatedb_script
 
 chmod +x /etc/cron.daily/updatedb
 
-CONF_PATH='/opt/setup'
-CONF_FILE="$CONF_PATH/setup.conf"
-
-mkdir --parent --verbose "$CONF_PATH"
-cd "$CONF_PATH"
-
 wget https://raw.githubusercontent.com/Nerigal/LISK/master/lib/libShUtil.sh -O "$CONF_PATH/libShUtil"
 
 if [ ! -f './libShUtil' ]; then
@@ -53,6 +47,19 @@ if [ ! -f './libShUtil' ]; then
 else
 . './libShUtil'
 fi
+
+if ! [ -f "$CONF_FILE" ]; then
+	echo -e 'could not find setup.conf file...' $WARNING
+	wget https://raw.githubusercontent.com/Nerigal/LISK/master/setup.conf -O "$CONF_FILE"
+fi
+
+
+CONF_PATH='/opt/setup'
+CONF_FILE="$CONF_PATH/setup.conf"
+
+mkdir --parent --verbose "$CONF_PATH"
+cd "$CONF_PATH"
+
 
 #######################################################################################################################################################
 
@@ -78,8 +85,7 @@ bash "$CONF_PATH/csf-setup"
 # Create a working directory
 
 wget https://raw.githubusercontent.com/Nerigal/LISK/master/postfix-setup.sh -O "$CONF_PATH/postfix-setup"
-bash /root/setup/postfix-setup
-
+bash "$CONF_PATH/postfix-setup"
 
 
 csf -x > /dev/null && csf -e > /dev/null
