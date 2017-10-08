@@ -33,7 +33,8 @@ function mandatory()
 function exists()
 {
 	if [ -z $1 ]; then
-		echo -e "You should consider configuring ${2} in Setup.conf"  $WARNING
+		echo -e "You should consider configuring ${2} in Setup.conf"  $ERROR
+		exit 1
 	fi
 }
 #--------------------------------------------------------------------------------------------
@@ -62,21 +63,32 @@ function setparam()
             echo "$3" >> $4 2>&1
         fi
     fi
+
     
-    if [[ ! -z "$3"  &&  -z "$4" ]];then    
-        if grep -E -q "^#?$1.*" $3 &> /dev/null ; then
-            sed -i -r "s|^#?$1.*|$2|g" $3
-            if [ $? -eq 0 ];then 
-                echo -e "$OK Value [ $1 ] has been replace by [ $2 ] correctly in [ $3 ]"
+    # param $1 search string 
+    # param $2 replacement
+    # param $3 file path
+    if [[ ! -z "$3"  &&  -z "$4" ]];then
+        if grep -E -q "^#?$1.*" $3 &> /dev/null || grep -E -q ".*$2.*" $3 &> /dev/null; then
+            if grep -E -q "$2" $3 &> /dev/null ;then
+                echo -e "$WARNNING Parameter $2 already set..."
             else
-                echo -e "$ERROR Could not execute the Sed command correctly in [ $2 ], Value to be replaced [ $1 ], Please investigate..."
-            fi
-		else
-			echo -e "$WARNNING Parameter $1 not found in $3, it will be added..."
-			echo "$2" >> $3
+                sed -i -r "s|^#?$1.*|$2|g" $3
+                if [ $? -eq 0 ];then
+                    echo -e "$OK Value [ $1 ] has been replace by [ $2 ] correctly in [ $3 ]"
+                else
+                    echo -e "$ERROR Could not execute the Sed command correctly in [ $2 ], Value to be replaced [ $1 ], Please investigate..."
+                fi              
+            fi            
+        else
+            echo -e "$WARNNING Parameter $1 not found in $3, it will be added..."
+            echo "$2" >> $3
         fi
     fi
-    
+
+
+    # param $1 search string 
+    # param $2 file path
     if [[ ! -z "$2"  &&  -z "$3" ]];then 
         if grep -q "$1" $2 &> /dev/null ; then
             echo -e "$WARNING Value [ $1 ] already set in $2, Nothing to do... "
